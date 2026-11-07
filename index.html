@@ -47,6 +47,7 @@ th.mainh small { display: block; font-weight: 400; font-size: 10px; line-height:
 .maincol { border-right: 1px solid var(--border-strong); }
 td.name { white-space: normal; }
 tr.total td { background: var(--total-bg); font-weight: 500; border-bottom: 2px solid var(--brand); }
+.sem-p1{background:#e3f4e8!important}.sem-p2{background:#bfe5cb!important}.sem-n1{background:#fdeaea!important}.sem-n2{background:#f7c9c9!important}
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -70,6 +71,7 @@ tr.total td { background: var(--total-bg); font-weight: 500; border-bottom: 2px 
   const f1 = n => n.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const sg = n => (n >= 0 ? "+" : "−") + f1(Math.abs(n));
 
+  const semD=(d,a)=>{const p=Math.abs(d/a);return p>=.10?(d>0?" sem-p2":" sem-n2"):p>=.04?(d>0?" sem-p1":" sem-n1"):""};const semG=g=>{const p=Math.abs(g);return p>=40?(g>0?" sem-p2":" sem-n2"):p>=15?(g>0?" sem-p1":" sem-n1"):""};
   function layout(W) {
     const compact = W < R.breakpoint, v = compact ? R.compact : R.comf;
     let g, main, cell;
@@ -105,7 +107,7 @@ tr.total td { background: var(--total-bg); font-weight: 500; border-bottom: 2px 
       h += `<tr${ri === 0 ? ' class="total"' : ""}><td class="name maincol">${name}</td>`;
       for (let i = 0; i < L.g; i++) {
         const r = rng(name + i), a = 412 * sc * GF[i] * (0.92 + r() * 0.16);
-        h += `<td class="num gstart">${f1(a)}</td><td class="num">${sg(a * (r() * 0.32 - 0.14))}</td><td class="num">${sg(r() * 120 - 35)}%</td>`;
+        const d = a * (r() * 0.32 - 0.14), g = r() * 120 - 35; h += `<td class="num gstart">${f1(a)}</td><td class="num${ri ? semD(d, a) : ""}">${sg(d)}</td><td class="num${ri ? semG(g) : ""}">${sg(g)}%</td>`;
       }
       h += `</tr>`;
     });
