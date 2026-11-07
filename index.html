@@ -118,7 +118,7 @@ tr.total td { background: var(--total-bg); font-weight: 500; border-bottom: 2px 
     const W = +input.value, k = Math.min(1, stage.clientWidth / W);
     scale.style.transform = `scale(${k})`;
     stage.style.height = (scale.offsetHeight * k) + "px";
-    try { parent.postMessage({ type: "rules-height", h: document.documentElement.scrollHeight }, "*"); } catch (e) {}
+    try { parent.postMessage({ type: "rules-height", h: Math.ceil(document.querySelector(".wrap").getBoundingClientRect().bottom + window.scrollY) }, "*"); } catch (e) {}
   }
   input.addEventListener("input", render);
   new ResizeObserver(fit).observe(stage);
