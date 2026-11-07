@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Table Rules Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg: #ffffff;
+  --total-bg: #f1f2f2;
+  --border-default: #edeeee;
+  --border-strong: #d1d2d2;
+  --brand: #830051;
+  --text-primary: #282a2a;
+  --text-secondary: #555b5b;
+  --text-tertiary: #828787;
+  --compact: #eef3f2;
+  --comfortable: #ebe5f0;
+  --font: "Inter", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text-primary); font-family: var(--font); font-size: 14px; line-height: 20px; }
+.wrap { padding: 16px; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 16px; }
+.label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em; }
+#w { width: 260px; max-width: 50vw; accent-color: var(--brand); }
+.val { font-weight: 600; font-variant-numeric: tabular-nums; min-width: 60px; }
+.view { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
+.view.compact { background: var(--compact); }
+.view.comfortable { background: var(--comfortable); }
+.stage { position: relative; overflow: hidden; }
+.scale { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+.tbl { border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; background: var(--bg); }
+table { border-collapse: separate; border-spacing: 0; table-layout: fixed; font-variant-numeric: tabular-nums; }
+th, td { padding: 0 var(--pad); font-size: var(--fs); line-height: calc(var(--fs) + 6px); height: 44px; border-bottom: 1px solid var(--border-default); vertical-align: middle; transition: font-size .12s; }
+thead th { background: var(--bg); font-weight: 600; }
+thead tr:last-child th { border-bottom-color: var(--border-strong); }
+th.grp { text-align: center; height: 48px; }
+th.sub, td.num { text-align: right; white-space: nowrap; }
+th.mainh { text-align: left; vertical-align: top; padding-top: 12px; padding-bottom: 12px; }
+th.mainh small { display: block; font-weight: 400; font-size: 10px; line-height: 13px; color: var(--text-tertiary); margin-top: 2px; }
+.gstart { border-left: 1px solid var(--border-strong); }
+.maincol { border-right: 1px solid var(--border-strong); }
+td.name { white-space: normal; }
+tr.total td { background: var(--total-bg); font-weight: 500; border-bottom: 2px solid var(--brand); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="controls">
+    <label class="label" for="w">Table width</label>
+    <input id="w" type="range" min="798" max="1500" step="1" value="896">
+    <span class="val" id="val">896px</span>
+    <span class="view compact" id="view">Compact view</span>
+  </div>
+  <div class="stage" id="stage"><div class="scale" id="scale"></div></div>
+</div>
+<script>
+(function () {
+  const R = { breakpoint: 1130, compact: { fs: 12, pad: 8, min: 72, max: 115 }, comf: { fs: 14, pad: 12, min: 100, max: 156 }, mainMin: 150, mainMax: 202, minGroups: 3 };
+  const GROUPS = ["October 2026", "Quarter to Date", "Year to Date", "Monthly Run Rate", "Full Year"];
+  const ROWS = [["Total", 1.9], ["Specialty Care", 1], ["Primary Care", .72], ["Immunology", .41], ["Vaccines", .19]];
+  const GF = [1, 2.9, 9.6, 1.04, 12.3];
+  function rng(seed) { let s = 0; for (const c of seed) s = (s * 31 + c.charCodeAt(0)) >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+  const f1 = n => n.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const sg = n => (n >= 0 ? "+" : "−") + f1(Math.abs(n));
+
+  function layout(W) {
+    const compact = W < R.breakpoint, v = compact ? R.compact : R.comf;
+    let g, main, cell;
+    if (compact) {
+      g = R.minGroups; const n = g * 3;
+      const s = (W - R.mainMin - n * v.min) / (2 + n);
+      main = Math.min(R.mainMin + 2 * s, R.mainMax); cell = (W - main) / n;
+    } else {
+      const fit = Math.max(R.minGroups, Math.floor((W - R.mainMin) / (3 * v.min)));
+      g = Math.min(fit, GROUPS.length); const n = g * 3;
+      main = fit === R.minGroups ? R.mainMax : R.mainMin; cell = (W - main) / n;
+      if (cell > v.max) { cell = v.max; main = Math.min(W - n * cell, R.mainMax); }
+    }
+    return { compact, v, g, main, cell };
+  }
+
+  const input = document.getElementById("w"), val = document.getElementById("val"), view = document.getElementById("view");
+  const stage = document.getElementById("stage"), scale = document.getElementById("scale");
+
+  function render() {
+    const W = +input.value, L = layout(W), n = L.g * 3;
+    val.textContent = W.toLocaleString("en-US") + "px";
+    view.textContent = L.compact ? "Compact view" : "Comfortable view";
+    view.className = "view " + (L.compact ? "compact" : "comfortable");
+    let h = `<div class="tbl" style="width:${W}px"><table style="--fs:${L.v.fs}px;--pad:${L.v.pad}px;width:${W - 2}px"><colgroup><col style="width:${L.main.toFixed(2)}px">` +
+      `<col style="width:${L.cell.toFixed(2)}px">`.repeat(n) + `</colgroup><thead><tr>` +
+      `<th class="mainh maincol" rowspan="2">Business Areas<small>Ordered by Actual Revenue (High to Low)</small></th>`;
+    for (let i = 0; i < L.g; i++) h += `<th class="grp gstart" colspan="3">${GROUPS[i]}</th>`;
+    h += `</tr><tr>`;
+    for (let i = 0; i < L.g; i++) h += `<th class="sub gstart">2026</th><th class="sub">vs BUD</th><th class="sub">Growth</th>`;
+    h += `</tr></thead><tbody>`;
+    ROWS.forEach(([name, sc], ri) => {
+      h += `<tr${ri === 0 ? ' class="total"' : ""}><td class="name maincol">${name}</td>`;
+      for (let i = 0; i < L.g; i++) {
+        const r = rng(name + i), a = 412 * sc * GF[i] * (0.92 + r() * 0.16);
+        h += `<td class="num gstart">${f1(a)}</td><td class="num">${sg(a * (r() * 0.32 - 0.14))}</td><td class="num">${sg(r() * 120 - 35)}%</td>`;
+      }
+      h += `</tr>`;
+    });
+    scale.innerHTML = h + `</tbody></table></div>`;
+    fit();
+  }
+  function fit() {
+    const W = +input.value, k = Math.min(1, stage.clientWidth / W);
+    scale.style.transform = `scale(${k})`;
+    stage.style.height = (scale.offsetHeight * k) + "px";
+    try { parent.postMessage({ type: "rules-height", h: document.documentElement.scrollHeight }, "*"); } catch (e) {}
+  }
+  input.addEventListener("input", render);
+  new ResizeObserver(fit).observe(stage);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  render();
+})();
+</script>
+</body>
+</html>
